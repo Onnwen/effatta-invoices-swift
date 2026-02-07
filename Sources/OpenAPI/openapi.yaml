@@ -49,16 +49,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/AsmXStringResponse'
 
-  /webservice/RestAPI.asmx/creaNotaCreditoTotale:
+  /webservice/RestAPI.asmx/creaNotaCreditoNumero:
     post:
-      summary: Crea Nota Credito Totale
-      operationId: creaNotaCreditoTotale
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreaNotaCreditoTotaleRequest'
+      summary: Crea Nota Credito per Numero Documento
+      operationId: creaNotaCreditoNumero
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Token di autenticazione API
+        - name: idMittente
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Identificativo del mittente
+        - name: idFattura
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ID della fattura originale
+        - name: numeroDocumento
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Numero del documento di nota di credito
       responses:
         '200':
           description: Nota credito creata (JSON serializzato in d)
@@ -187,17 +207,6 @@ components:
     # ======================
     # NOTA CREDITO
     # ======================
-    CreaNotaCreditoTotaleRequest:
-      type: object
-      required: [token, idMittente, idFattura]
-      properties:
-        token:
-          type: string
-        idMittente:
-          type: string
-        idFattura:
-          type: string
-
     CreaNotaCreditoTotaleData:
       type: object
       properties:
@@ -205,7 +214,7 @@ components:
           type: string
         errMsg:
           type: string
-        idNotaCredito:
+        idDocumento:
           type: string
 
     # ======================

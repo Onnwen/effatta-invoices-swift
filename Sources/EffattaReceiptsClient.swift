@@ -51,19 +51,16 @@ public final actor EffattaInvoicesClient {
         }
     }
 
-    public func cancelInvoice(_ documentId: String) async throws -> String {
+    public func cancelInvoice(_ documentId: String, documentNumber: String) async throws -> String {
         let authentication = try await checkAuthentication()
 
-        let response = try await client.creaNotaCreditoTotale(
-            .init(
-                body: .json(
-                    .init(
-                        token: authentication.token,
-                        idMittente: authentication.userId,
-                        idFattura: documentId,
-                    ),
-                ),
-            ),
+        let response = try await client.creaNotaCreditoNumero(
+            query: .init(
+                token: authentication.token,
+                idMittente: authentication.userId,
+                idFattura: documentId,
+                numeroDocumento: documentNumber
+            )
         )
 
         guard case let .ok(body) = response else {
@@ -79,7 +76,7 @@ public final actor EffattaInvoicesClient {
 
             let body: Components.Schemas.CreaNotaCreditoTotaleData = try decodeAsmxPayload(jsonString)
 
-            guard let documentId = body.idNotaCredito else {
+            guard let documentId = body.idDocumento else {
                 dump(response)
                 throw EffattaInvoicesError.badResponse
             }
