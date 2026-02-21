@@ -33,21 +33,17 @@ public final actor EffattaInvoicesClient {
         )
 
         guard case let .ok(body) = response else {
-            dump(response)
-            throw EffattaInvoicesError.badStatusCode
+            throw EffattaInvoicesError.unknown("\(String(describing: response))")
         }
 
         do {
             guard let jsonString = try body.body.json.d else {
-                dump(response)
-                throw EffattaInvoicesError.badResponse
+                throw EffattaInvoicesError.unknown("\(String(describing: response))")
             }
 
             return try decodeAsmxPayload(jsonString)
         } catch {
-            dump(error)
-            dump(error.localizedDescription)
-            throw EffattaInvoicesError.unknown
+            throw EffattaInvoicesError.unknown("\(String(describing: error)) \(String(describing: error.localizedDescription))")
         }
     }
 
@@ -63,34 +59,30 @@ public final actor EffattaInvoicesClient {
             )
         )
 
-        guard case let .ok(body) = response else {
-            dump(response)
-            throw EffattaInvoicesError.badStatusCode
-        }
+        switch response {
+        case .ok(let response):
+            do {
+                guard let jsonString = try response.body.json.d else {
+                    throw EffattaInvoicesError.unknown("\(String(describing: response))")
+                }
 
-        do {
-            guard let jsonString = try body.body.json.d else {
-                dump(response)
-                throw EffattaInvoicesError.badResponse
+                let body: Components.Schemas.CreaNotaCreditoTotaleData = try decodeAsmxPayload(jsonString)
+
+                guard let documentId = body.idDocumento else {
+                    throw EffattaInvoicesError.unknown("\(String(describing: response))")
+                }
+
+                return documentId
+            } catch {
+                throw EffattaInvoicesError.unknown("\(String(describing: response)) - \(String(describing: error)) - \(String(describing: error.localizedDescription))")
             }
-
-            let body: Components.Schemas.CreaNotaCreditoTotaleData = try decodeAsmxPayload(jsonString)
-
-            guard let documentId = body.idDocumento else {
-                dump(response)
-                throw EffattaInvoicesError.badResponse
-            }
-
-            return documentId
-        } catch {
-            dump(error)
-            dump(error.localizedDescription)
-            throw EffattaInvoicesError.unknown
+        case .undocumented(let statusCode, let payload):
+            throw EffattaInvoicesError.unknown("\(statusCode) - \(String(describing: response))")
         }
     }
 
     public enum EffattaInvoicesError: Error {
-        case unknown
+        case unknown(String)
         case status(Int)
         case invalidEnvironmentURL
         case badStatusCode
