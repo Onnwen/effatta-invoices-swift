@@ -80,6 +80,46 @@ public final actor EffattaInvoicesClient {
             throw EffattaInvoicesError.unknown("\(statusCode) - \(String(describing: response))")
         }
     }
+    
+    public func getInvoiceStatus(_ documentId: String) async throws -> Components.Schemas.Esito.TitoloPayload.Value1Payload {
+        let authentication = try await checkAuthentication()
+        
+        let response = try await client.getEsitoDocument(
+            .init(
+                query: .init(
+                    token: authentication.token,
+                    idMittente: authentication.userId,
+                    idFattura: documentId
+                )
+            )
+        )
+
+        guard case let .ok(body) = response else {
+            throw EffattaInvoicesError.unknown("\(String(describing: response))")
+        }
+
+        do {
+            guard let jsonString = try body.body.json.d else {
+                throw EffattaInvoicesError.unknown("\(String(describing: response))")
+            }
+
+            let decodedPayload: Components.Schemas.EsitoDocumento = try decodeAsmxPayload(jsonString)
+
+            for esito in decodedPayload.Lista_Esiti.reversed() {
+                if let statoEsito = esito.Titolo.value1, statoEsito != .INVIO_space_SDI {
+                    return statoEsito
+                }
+            }
+            
+            if decodedPayload.Stato_Documento.value1 == .OK {
+                return .NOTIFICA_space_MANCATA_space_CONSEGNA
+            } else {
+                return decodedPayload.Lista_Esiti.last?.Titolo.value1 ?? .SCONOSCIUTO
+            }
+        } catch {
+            throw EffattaInvoicesError.unknown("\(String(describing: error)) \(String(describing: error.localizedDescription))")
+        }
+    }
 
     public enum EffattaInvoicesError: Error {
         case unknown(String)

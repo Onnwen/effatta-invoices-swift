@@ -86,7 +86,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AsmXStringResponse'
-
+                
+  /webservice/RestAPI.asmx/getEsitoDocument:
+    post:
+      summary: Ottieni esito documento
+      operationId: getEsitoDocument
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Token di autenticazione API
+        - name: idMittente
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Identificativo del mittente
+        - name: idFattura
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ID della fattura originale
+      responses:
+        '200':
+          description: Array di esiti
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsmXStringResponse'
+                
 components:
   schemas:
 
@@ -482,3 +514,69 @@ components:
           type: string
         fgen_Causale:
           type: string
+
+    EsitoDocumento:
+      type: object
+      required:
+        - Stato_Documento
+        - Lista_Esiti
+      properties:
+        Stato_Documento:
+            anyOf:
+                - type: string
+                  enum:
+                    - OK
+                    - KO
+                - type: string
+        Lista_Esiti:
+          type: array
+          items:
+            $ref: '#/components/schemas/Esito'
+
+    Esito:
+      type: object
+      required:
+        - Titolo
+        - Identificativo_SdI
+        - Nome_File
+      properties:
+        Titolo:
+          anyOf:
+            - type: string
+              enum:
+                - INVIO SDI
+                - NOTIFICA MANCATA CONSEGNA
+                - NOTIFICA SCARTO
+                - RICEVUTA CONSEGNA
+                - SCONOSCIUTO
+            - type: string
+        Identificativo_SdI:
+          type: string
+          example: "16772160751"
+        Nome_File:
+          type: string
+          example: "IT03903290785_6EX5D.xml"
+        Errore_SDI:
+          type: string
+          example: "Nessuno"
+        Descrizione_Esito_SdI:
+          type: string
+          example: "10773841 - Invio al Sistema di Interscambio avvenuto con successo"
+        Data_Ora_Ricezione_SdI:
+          type: string
+          example: "02/03/2026 10:24:09"
+        Message_Id:
+          type: string
+          example: "40394726606"
+        Data_Ora_Ricezione:
+          type: string
+          example: "02/03/2026 10:24:09"
+        Data_Ora_Consegna:
+          type: string
+        Note:
+          type: string
+        Descrizione:
+          type: string
+        IdNotifica:
+          type: integer
+          example: 7379278
