@@ -210,7 +210,7 @@ extension EffattaInvoicesClient {
         case tokenMissing
     }
     
-    public enum ADEInvoiceStatus {
+    public enum ADEInvoiceStatus: Sendable {
         case mancataConsegna
         case consegnata
         case scarto(error: String?, reason: String?)
