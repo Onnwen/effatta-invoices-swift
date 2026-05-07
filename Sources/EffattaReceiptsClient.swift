@@ -14,6 +14,8 @@ public final actor EffattaInvoicesClient {
     private let credentials: EffattaInvoicesCredentials
     private var authentication: EffattaInvoicesAuthentication?
 
+    private static let debugBodyByteLimit = 256 * 1024
+
     public init(credentials: EffattaInvoicesCredentials) throws {
         self.credentials = credentials
         client = try getConfigureClient(credentials: credentials)
@@ -32,18 +34,30 @@ public final actor EffattaInvoicesClient {
             ),
         )
 
-        guard case let .ok(body) = response else {
-            throw EffattaInvoicesError.unknown("\(String(describing: response))")
+        let okBody: Operations.creaDocumentoV2.Output.Ok
+        switch response {
+        case .ok(let body):
+            okBody = body
+        case .undocumented(let statusCode, let payload):
+            throw EffattaInvoicesError.unexpectedStatus(
+                operation: "creaDocumentoV2",
+                statusCode: statusCode,
+                body: await Self.debugBody(payload.body),
+            )
+        }
+
+        guard let jsonString = try okBody.body.json.d else {
+            throw EffattaInvoicesError.missingPayload(operation: "creaDocumentoV2", body: nil)
         }
 
         do {
-            guard let jsonString = try body.body.json.d else {
-                throw EffattaInvoicesError.unknown("\(String(describing: response))")
-            }
-
             return try decodeAsmxPayload(jsonString)
         } catch {
-            throw EffattaInvoicesError.unknown("\(String(describing: error)) \(String(describing: error.localizedDescription))")
+            throw EffattaInvoicesError.decodingFailed(
+                operation: "creaDocumentoV2",
+                payload: jsonString,
+                underlying: error,
+            )
         }
     }
 
@@ -59,31 +73,47 @@ public final actor EffattaInvoicesClient {
             )
         )
 
+        let okBody: Operations.creaNotaCreditoNumero.Output.Ok
         switch response {
-        case .ok(let response):
-            do {
-                guard let jsonString = try response.body.json.d else {
-                    throw EffattaInvoicesError.unknown("\(String(describing: response))")
-                }
-
-                let body: Components.Schemas.CreaNotaCreditoTotaleData = try decodeAsmxPayload(jsonString)
-
-                guard let documentId = body.idDocumento else {
-                    throw EffattaInvoicesError.unknown("\(String(describing: response))")
-                }
-
-                return documentId
-            } catch {
-                throw EffattaInvoicesError.unknown("\(String(describing: response)) - \(String(describing: error)) - \(String(describing: error.localizedDescription))")
-            }
-        case .undocumented(let statusCode, _):
-            throw EffattaInvoicesError.unknown("\(statusCode) - \(String(describing: response))")
+        case .ok(let body):
+            okBody = body
+        case .undocumented(let statusCode, let payload):
+            throw EffattaInvoicesError.unexpectedStatus(
+                operation: "creaNotaCreditoNumero",
+                statusCode: statusCode,
+                body: await Self.debugBody(payload.body),
+            )
         }
+
+        guard let jsonString = try okBody.body.json.d else {
+            throw EffattaInvoicesError.missingPayload(operation: "creaNotaCreditoNumero", body: nil)
+        }
+
+        let body: Components.Schemas.CreaNotaCreditoTotaleData
+        do {
+            body = try decodeAsmxPayload(jsonString)
+        } catch {
+            throw EffattaInvoicesError.decodingFailed(
+                operation: "creaNotaCreditoNumero",
+                payload: jsonString,
+                underlying: error,
+            )
+        }
+
+        guard let documentId = body.idDocumento else {
+            throw EffattaInvoicesError.missingField(
+                operation: "creaNotaCreditoNumero",
+                field: "idDocumento",
+                payload: jsonString,
+            )
+        }
+
+        return documentId
     }
-    
+
     public func getInvoiceStatus(_ documentId: String) async throws -> ADEInvoiceStatus {
         let authentication = try await checkAuthentication()
-        
+
         let response = try await client.getEsitoDocument(
             .init(
                 query: .init(
@@ -94,42 +124,85 @@ public final actor EffattaInvoicesClient {
             )
         )
 
-        guard case let .ok(body) = response else {
-            if case .notFound = response {
-                return .notFound
-            } else {
-                throw EffattaInvoicesError.unknown("\(String(describing: response))")
-            }
+        let okBody: Operations.getEsitoDocument.Output.Ok
+        switch response {
+        case .ok(let body):
+            okBody = body
+        case .notFound:
+            return .notFound
+        case .undocumented(let statusCode, let payload):
+            throw EffattaInvoicesError.unexpectedStatus(
+                operation: "getEsitoDocument",
+                statusCode: statusCode,
+                body: await Self.debugBody(payload.body),
+            )
         }
 
+        guard let jsonString = try okBody.body.json.d else {
+            throw EffattaInvoicesError.missingPayload(operation: "getEsitoDocument", body: nil)
+        }
+
+        let decodedPayload: Components.Schemas.EsitoDocumento
         do {
-            guard let jsonString = try body.body.json.d else {
-                throw EffattaInvoicesError.unknown("\(String(describing: response))")
-            }
-
-            let decodedPayload: Components.Schemas.EsitoDocumento = try decodeAsmxPayload(jsonString)
-
-            if let last = decodedPayload.Lista_Esiti.last, let adeEsitoLast = ADEInvoiceStatus(esito: last) {
-                return adeEsitoLast
-            } else {
-                return .unkown(raw: "Stato sconosciuto")
-            }
+            decodedPayload = try decodeAsmxPayload(jsonString)
         } catch {
-            throw EffattaInvoicesError.unknown("\(String(describing: error)) \(String(describing: error.localizedDescription))")
+            throw EffattaInvoicesError.decodingFailed(
+                operation: "getEsitoDocument",
+                payload: jsonString,
+                underlying: error,
+            )
         }
+
+        if let last = decodedPayload.Lista_Esiti.last, let adeEsitoLast = ADEInvoiceStatus(esito: last) {
+            return adeEsitoLast
+        }
+        return .unkown(raw: "Stato sconosciuto")
     }
 
-    public enum EffattaInvoicesError: Error {
-        case unknown(String)
-        case status(Int)
+    public enum EffattaInvoicesError: Error, CustomStringConvertible, LocalizedError {
+        case unexpectedStatus(operation: String, statusCode: Int, body: String?)
+        case missingPayload(operation: String, body: String?)
+        case missingField(operation: String, field: String, payload: String?)
+        case decodingFailed(operation: String, payload: String, underlying: any Error & Sendable)
         case invalidEnvironmentURL
-        case badStatusCode
-        case badResponse
         case failedReadingPDF(String)
+
+        public var description: String {
+            switch self {
+            case let .unexpectedStatus(operation, statusCode, body):
+                return "EffattaInvoices[\(operation)] unexpected HTTP \(statusCode)\(Self.formatBody(body))"
+            case let .missingPayload(operation, body):
+                return "EffattaInvoices[\(operation)] missing ASMX `d` payload\(Self.formatBody(body))"
+            case let .missingField(operation, field, payload):
+                return "EffattaInvoices[\(operation)] missing field `\(field)`\(Self.formatBody(payload))"
+            case let .decodingFailed(operation, payload, underlying):
+                return "EffattaInvoices[\(operation)] decode failed: \(underlying)\(Self.formatBody(payload))"
+            case .invalidEnvironmentURL:
+                return "EffattaInvoices invalid environment URL"
+            case let .failedReadingPDF(detail):
+                return "EffattaInvoices failed reading PDF: \(detail)"
+            }
+        }
+
+        public var errorDescription: String? { description }
+
+        private static func formatBody(_ body: String?) -> String {
+            guard let body, !body.isEmpty else { return "" }
+            return " — body: \(body)"
+        }
     }
 
     public enum AsmxDecodeError: Error {
         case invalidUTF8
+    }
+
+    private static func debugBody(_ body: HTTPBody?) async -> String? {
+        guard let body else { return nil }
+        do {
+            return try await String(collecting: body, upTo: debugBodyByteLimit)
+        } catch {
+            return "<body read failed: \(error)>"
+        }
     }
 
     private func decodeAsmxPayload<T: Decodable>(
@@ -137,7 +210,6 @@ public final actor EffattaInvoicesClient {
         decoder: JSONDecoder = JSONDecoder(),
     ) throws -> T {
         guard let data = d.data(using: .utf8) else {
-            dump(d)
             throw AsmxDecodeError.invalidUTF8
         }
         return try decoder.decode(T.self, from: data)
@@ -165,41 +237,40 @@ extension EffattaInvoicesClient {
             ),
         )
 
-        guard case let .ok(body) = response else {
-            dump(response)
-            throw EffattaInvoicesError.badStatusCode
-        }
-
-        do {
-            guard let jsonString = try body.body.json.d else {
-                dump(response)
-                throw EffattaInvoicesError.badResponse
-            }
-
-            let body: Components.Schemas.LoginData = try decodeAsmxPayload(jsonString)
-
-            guard let token = body.token,
-                  let userId = body.userId
-            else {
-                dump(response)
-                throw EffattaInvoicesError.badResponse
-            }
-
-            authentication = .init(
-                token: token,
-                userId: userId,
-                expiresAt: Date().addingTimeInterval(60 * 55),
+        let okBody: Operations.login.Output.Ok
+        switch response {
+        case .ok(let body):
+            okBody = body
+        case .undocumented(let statusCode, let payload):
+            throw EffattaInvoicesAuthenticationError.loginFailed(
+                statusCode: statusCode,
+                body: await Self.debugBody(payload.body),
             )
+        }
+
+        guard let jsonString = try okBody.body.json.d else {
+            throw EffattaInvoicesAuthenticationError.loginPayloadInvalid(payload: nil, underlying: nil)
+        }
+
+        let body: Components.Schemas.LoginData
+        do {
+            body = try decodeAsmxPayload(jsonString)
         } catch {
-            dump(error)
-            dump(error.localizedDescription)
-            throw EffattaInvoicesAuthenticationError.tokenRefreshFailed
+            throw EffattaInvoicesAuthenticationError.loginPayloadInvalid(payload: jsonString, underlying: error)
         }
 
-        guard let authentication else {
-            throw EffattaInvoicesAuthenticationError.tokenMissing
+        guard let token = body.token,
+              let userId = body.userId
+        else {
+            throw EffattaInvoicesAuthenticationError.loginPayloadInvalid(payload: jsonString, underlying: nil)
         }
 
+        let authentication = EffattaInvoicesAuthentication(
+            token: token,
+            userId: userId,
+            expiresAt: Date().addingTimeInterval(60 * 55),
+        )
+        self.authentication = authentication
         return authentication
     }
 
@@ -209,11 +280,31 @@ extension EffattaInvoicesClient {
         var expiresAt: Date
     }
 
-    enum EffattaInvoicesAuthenticationError: Error {
-        case tokenRefreshFailed
+    enum EffattaInvoicesAuthenticationError: Error, CustomStringConvertible, LocalizedError {
+        case loginFailed(statusCode: Int, body: String?)
+        case loginPayloadInvalid(payload: String?, underlying: (any Error & Sendable)?)
         case tokenMissing
+
+        var description: String {
+            switch self {
+            case let .loginFailed(statusCode, body):
+                if let body, !body.isEmpty {
+                    return "EffattaInvoices[login] HTTP \(statusCode) — body: \(body)"
+                }
+                return "EffattaInvoices[login] HTTP \(statusCode)"
+            case let .loginPayloadInvalid(payload, underlying):
+                var parts: [String] = ["EffattaInvoices[login] login payload invalid"]
+                if let underlying { parts.append("error: \(underlying)") }
+                if let payload, !payload.isEmpty { parts.append("payload: \(payload)") }
+                return parts.joined(separator: " — ")
+            case .tokenMissing:
+                return "EffattaInvoices[login] token missing"
+            }
+        }
+
+        var errorDescription: String? { description }
     }
-    
+
     public enum ADEInvoiceStatus: Sendable {
         case mancataConsegna
         case consegnata
@@ -221,7 +312,7 @@ extension EffattaInvoicesClient {
         case invio
         case notFound
         case unkown(raw: String?)
-        
+
         init?(esito: Components.Schemas.Esito) {
             switch esito.Titolo.value1 {
             case .INVIO_space_SDI:
