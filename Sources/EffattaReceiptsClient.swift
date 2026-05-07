@@ -116,11 +116,12 @@ public final actor EffattaInvoicesClient {
 
         let response = try await client.getEsitoDocument(
             .init(
-                query: .init(
+                body: .json(.init(
                     token: authentication.token,
+                    userId: authentication.userId,
                     idMittente: authentication.userId,
                     idFattura: documentId
-                )
+               ))
             )
         )
 

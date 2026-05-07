@@ -1,22 +1,19 @@
-openapi: 3.0.3
-
+---
+openapi: '3.0.3'
 info:
-  title: RestAPI Fatturazione (ASMx)
-  description: API legacy .asmx con payload JSON serializzato nel campo d
-  version: 1.0.0
-
+  title: 'RestAPI Fatturazione (ASMx)'
+  description: 'API legacy .asmx con payload JSON serializzato nel campo d'
+  version: '1.0.0'
 servers:
-  - url: https://{dominio}
+  - url: 'https://{dominio}'
     variables:
       dominio:
-        default: example.com
-
+        default: 'example.com'
 paths:
-
   /webservice/RestAPI.asmx/login:
     post:
-      summary: Login
-      operationId: login
+      summary: 'Login'
+      operationId: 'login'
       requestBody:
         required: true
         content:
@@ -25,16 +22,15 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Login response (JSON serializzato in d)
+          description: 'Login response (JSON serializzato in d)'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AsmXStringResponse'
-
   /webservice/RestAPI.asmx/creaDocumentoV2:
     post:
-      summary: Crea Documento
-      operationId: creaDocumentoV2
+      summary: 'Crea Documento'
+      operationId: 'creaDocumentoV2'
       requestBody:
         required: true
         content:
@@ -43,74 +39,78 @@ paths:
               $ref: '#/components/schemas/CreaDocumentoRequest'
       responses:
         '200':
-          description: Documento creato (JSON serializzato in d)
+          description: 'Documento creato (JSON serializzato in d)'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AsmXStringResponse'
-
   /webservice/RestAPI.asmx/creaNotaCreditoNumero:
     post:
-      summary: Crea Nota Credito per Numero Documento
-      operationId: creaNotaCreditoNumero
+      summary: 'Crea Nota Credito per Numero Documento'
+      operationId: 'creaNotaCreditoNumero'
       parameters:
-        - name: token
-          in: query
+        - name: 'token'
+          in: 'query'
           required: true
           schema:
-            type: string
-          description: Token di autenticazione API
-        - name: idMittente
-          in: query
+            type: 'string'
+          description: 'Token di autenticazione API'
+        - name: 'idMittente'
+          in: 'query'
           required: true
           schema:
-            type: string
-            format: uuid
-          description: Identificativo del mittente
-        - name: idFattura
-          in: query
+            type: 'string'
+            format: 'uuid'
+          description: 'Identificativo del mittente'
+        - name: 'idFattura'
+          in: 'query'
           required: true
           schema:
-            type: string
-          description: ID della fattura originale
-        - name: numeroDocumento
-          in: query
+            type: 'string'
+          description: 'ID della fattura originale'
+        - name: 'numeroDocumento'
+          in: 'query'
           required: true
           schema:
-            type: string
-          description: Numero del documento di nota di credito
+            type: 'string'
+          description: 'Numero del documento di nota di credito'
       responses:
         '200':
-          description: Nota credito creata (JSON serializzato in d)
+          description: 'Nota credito creata (JSON serializzato in d)'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AsmXStringResponse'
-                
   /webservice/RestAPI.asmx/getEsitoDocument:
     post:
       summary: Ottieni esito documento
       operationId: getEsitoDocument
-      parameters:
-        - name: token
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Token di autenticazione API
-        - name: idMittente
-          in: query
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Identificativo del mittente
-        - name: idFattura
-          in: query
-          required: true
-          schema:
-            type: string
-          description: ID della fattura originale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - userId
+                - idMittente
+                - idFattura
+              properties:
+                token:
+                  type: string
+                  description: Token di autenticazione API
+                userId:
+                  type: string
+                  format: uuid
+                  description: Identificativo dell'utente
+                idMittente:
+                  type: string
+                  format: uuid
+                  description: Identificativo del mittente
+                idFattura:
+                  type: string
+                  description: ID della fattura originale
       responses:
         '200':
           description: Array di esiti
@@ -119,58 +119,51 @@ paths:
               schema:
                 $ref: '#/components/schemas/AsmXStringResponse'
         '404':
-          description: Array di esiti
-                
+          description: Esito non trovato
 components:
   schemas:
-
-    # ======================
-    # RESPONSE GENERICA ASMX
-    # ======================
     AsmXStringResponse:
-      type: object
+      type: 'object'
       properties:
         d:
-          type: string
-          description: JSON serializzato (richiede seconda deserializzazione)
-
-    # ======================
-    # LOGIN
-    # ======================
+          type: 'string'
+          description: 'JSON serializzato (richiede seconda deserializzazione)'
     LoginRequest:
-      type: object
-      required: [username, password, source]
+      type: 'object'
+      required:
+        - 'username'
+        - 'password'
+        - 'source'
       properties:
         username:
-          type: string
+          type: 'string'
         password:
-          type: string
+          type: 'string'
         source:
-          type: string
-
+          type: 'string'
     LoginData:
-      type: object
+      type: 'object'
       properties:
         token:
-          type: string
+          type: 'string'
         userId:
-          type: string
+          type: 'string'
         userNameParent:
-          type: string
+          type: 'string'
         email:
-          type: string
+          type: 'string'
         isPersonaFisica:
-          type: integer
+          type: 'integer'
         nome:
-          type: string
+          type: 'string'
         cognome:
-          type: string
+          type: 'string'
         denominazione:
-          type: string
+          type: 'string'
         appTemplate:
-          type: string
+          type: 'string'
         regimeFiscale:
-          type: string
+          type: 'string'
         naturaEsenzioneIVA:
           $ref: '#/components/schemas/NaturaIVA'
         qrCode:
@@ -178,29 +171,25 @@ components:
         SDI:
           $ref: '#/components/schemas/SDI'
         aliquotaIVADefault:
-          type: string
+          type: 'string'
         dataScadenzaAbbonamento:
-          type: string
-          format: date
-
-    # ======================
-    # CREA DOCUMENTO
-    # ======================
+          type: 'string'
+          format: 'date'
     CreaDocumentoRequest:
-      type: object
+      type: 'object'
       required:
-        - token
-        - idMittente
-        - datiGeneraliDocumento
-        - prodList
+        - 'token'
+        - 'idMittente'
+        - 'datiGeneraliDocumento'
+        - 'prodList'
       properties:
         token:
-          type: string
+          type: 'string'
         idMittente:
-          type: string
+          type: 'string'
         isPA:
-          type: string
-          example: "0"
+          type: 'string'
+          example: '0'
         datiGeneraliDocumento:
           $ref: '#/components/schemas/DatiGeneraliDocumento'
         datiPagamento:
@@ -210,378 +199,349 @@ components:
         qrCode:
           $ref: '#/components/schemas/QrCodeDocumento'
         retFileType:
-          type: string
-          example: xml
+          type: 'string'
+          example: 'xml'
         attachmentName:
-          type: string
+          type: 'string'
         attachmentContent:
-          type: string
+          type: 'string'
         sendDoc:
-          type: integer
+          type: 'integer'
           example: 1
-
     CreaDocumentoData:
-      type: object
+      type: 'object'
       properties:
         errCode:
-          type: string
+          type: 'string'
         errMsg:
-          type: string
+          type: 'string'
         idDocumento:
-          type: string
+          type: 'string'
         fileContent:
-          type: string
+          type: 'string'
         fileName:
-          type: string
+          type: 'string'
         numeroDocumento:
-          type: string
+          type: 'string'
         docInfo:
           $ref: '#/components/schemas/DocInfo'
-
-    # ======================
-    # NOTA CREDITO
-    # ======================
     CreaNotaCreditoTotaleData:
-      type: object
+      type: 'object'
       properties:
         errCode:
-          type: string
+          type: 'string'
         errMsg:
-          type: string
+          type: 'string'
         idDocumento:
-          type: string
-
-    # ======================
-    # ENUM & TIPI FISCALI
-    # ======================
+          type: 'string'
     RegimeFiscale:
-      type: string
+      type: 'string'
       enum:
-        - ORDINARIO
-        - CONTRIBUENTI_MINIMI
-        - AGRICOLTURA_E_PESCA
-        - VENDITA_SALI_E_TABACCHI
-        - COMMERCIO_FIAMMIFERI
-        - EDITORIA
-        - SERVIZI_TELEFONIA
-        - RIVENDITA_TRASPORTI_E_SOSTA
-        - INTRATTENIMENTI_E_GIOCHI
-        - AGENZIE_VIAGGI_E_TURISMO
-        - AGRITURISMO
-        - VENDITE_A_DOMICILIO
-        - REGIME_DEL_MARGINE
-        - ASTE_OGGETTI_ARTE
-        - IVA_PER_CASSA_PA
-        - IVA_PER_CASSA
-        - ALTRO
-        - REGIME_FORFETTARIO
-
+        - 'ORDINARIO'
+        - 'CONTRIBUENTI_MINIMI'
+        - 'AGRICOLTURA_E_PESCA'
+        - 'VENDITA_SALI_E_TABACCHI'
+        - 'COMMERCIO_FIAMMIFERI'
+        - 'EDITORIA'
+        - 'SERVIZI_TELEFONIA'
+        - 'RIVENDITA_TRASPORTI_E_SOSTA'
+        - 'INTRATTENIMENTI_E_GIOCHI'
+        - 'AGENZIE_VIAGGI_E_TURISMO'
+        - 'AGRITURISMO'
+        - 'VENDITE_A_DOMICILIO'
+        - 'REGIME_DEL_MARGINE'
+        - 'ASTE_OGGETTI_ARTE'
+        - 'IVA_PER_CASSA_PA'
+        - 'IVA_PER_CASSA'
+        - 'ALTRO'
+        - 'REGIME_FORFETTARIO'
     ModalitaPagamento:
-      type: string
+      type: 'string'
       enum:
-        - MP01
-        - MP02
-        - MP03
-        - MP04
-        - MP05
-        - MP06
-        - MP07
-        - MP08
-        - MP09
-        - MP10
-        - MP11
-        - MP12
-        - MP13
-        - MP14
-        - MP15
-        - MP16
-        - MP17
-        - MP18
-        - MP19
-        - MP20
-        - MP21
-        - MP22
-        - MP23
-
+        - 'MP01'
+        - 'MP02'
+        - 'MP03'
+        - 'MP04'
+        - 'MP05'
+        - 'MP06'
+        - 'MP07'
+        - 'MP08'
+        - 'MP09'
+        - 'MP10'
+        - 'MP11'
+        - 'MP12'
+        - 'MP13'
+        - 'MP14'
+        - 'MP15'
+        - 'MP16'
+        - 'MP17'
+        - 'MP18'
+        - 'MP19'
+        - 'MP20'
+        - 'MP21'
+        - 'MP22'
+        - 'MP23'
     TipoDocumento:
-      type: string
+      type: 'string'
       enum:
-        - TD01
-        - TD02
-        - TD03
-        - TD04
-        - TD05
-        - TD06
-        - TD16
-        - TD17
-        - TD18
-        - TD19
-        - TD20
-        - TD21
-        - TD22
-        - TD23
-        - TD24
-        - TD25
-        - TD26
-        - TD27
-
+        - 'TD01'
+        - 'TD02'
+        - 'TD03'
+        - 'TD04'
+        - 'TD05'
+        - 'TD06'
+        - 'TD16'
+        - 'TD17'
+        - 'TD18'
+        - 'TD19'
+        - 'TD20'
+        - 'TD21'
+        - 'TD22'
+        - 'TD23'
+        - 'TD24'
+        - 'TD25'
+        - 'TD26'
+        - 'TD27'
     NaturaIVA:
-      type: string
+      type: 'string'
       enum:
-        - N1
-        - N2.1
-        - N2.2
-        - N3.1
-        - N3.2
-        - N3.3
-        - N3.4
-        - N3.5
-        - N3.6
-        - N4
-        - N5
-        - N6.1
-        - N6.2
-        - N6.3
-        - N6.4
-        - N6.5
-        - N6.6
-        - N6.7
-        - N6.8
-        - N6.9
-        - N7
-
+        - 'N1'
+        - 'N2.1'
+        - 'N2.2'
+        - 'N3.1'
+        - 'N3.2'
+        - 'N3.3'
+        - 'N3.4'
+        - 'N3.5'
+        - 'N3.6'
+        - 'N4'
+        - 'N5'
+        - 'N6.1'
+        - 'N6.2'
+        - 'N6.3'
+        - 'N6.4'
+        - 'N6.5'
+        - 'N6.6'
+        - 'N6.7'
+        - 'N6.8'
+        - 'N6.9'
+        - 'N7'
     TipoRitenuta:
-      type: string
+      type: 'string'
       enum:
-        - RT01
-        - RT02
-        - RT03
-        - RT04
-        - RT05
-        - RT06
-
-    # ======================
-    # STRUTTURE COMUNI
-    # ======================
+        - 'RT01'
+        - 'RT02'
+        - 'RT03'
+        - 'RT04'
+        - 'RT05'
+        - 'RT06'
     DatiGeneraliDocumento:
-      type: object
+      type: 'object'
       properties:
         causale:
-          type: string
+          type: 'string'
         numeroDocumento:
-          type: string
+          type: 'string'
         dataDocumento:
-          type: string
-          format: date
+          type: 'string'
+          format: 'date'
         importoBollo:
-          type: string
+          type: 'string'
         tipoDocumento:
           $ref: '#/components/schemas/TipoDocumento'
         regimeFiscale:
           $ref: '#/components/schemas/RegimeFiscale'
         arrotondamento:
-          type: number
+          type: 'number'
         aliquotaRitenuta:
-          type: number
+          type: 'number'
         importoSconto:
-          type: number
+          type: 'number'
         percentualeSconto:
-          type: number
-
+          type: 'number'
     DatiPagamento:
-      type: object
+      type: 'object'
       properties:
         list:
-          type: array
+          type: 'array'
           items:
             $ref: '#/components/schemas/Pagamento'
-
     Pagamento:
-      type: object
+      type: 'object'
       properties:
         modalitaPagamento:
           $ref: '#/components/schemas/ModalitaPagamento'
         dataScadenzaPagamento:
-          type: string
-          format: date
+          type: 'string'
+          format: 'date'
         importoPagamento:
-          type: string
+          type: 'string'
         iban:
-          type: string
+          type: 'string'
         istitutoFinanziario:
-          type: string
-
+          type: 'string'
     ProdList:
-      type: object
+      type: 'object'
       properties:
         list:
-          type: array
+          type: 'array'
           items:
             $ref: '#/components/schemas/Prodotto'
-
     Prodotto:
-      type: object
+      type: 'object'
       properties:
         numeroLinea:
-          type: integer
+          type: 'integer'
         descrizione:
-          type: string
+          type: 'string'
         quantita:
-          type: number
+          type: 'number'
         prezzoUnitario:
-          type: string
+          type: 'string'
         prezzoTotale:
-          type: string
+          type: 'string'
         aliquotaIva:
-          type: string
+          type: 'string'
         natura:
           $ref: '#/components/schemas/NaturaIVA'
-
     QrCode:
-      type: object
+      type: 'object'
       properties:
         qrCodeAgEnt:
-          type: string
+          type: 'string'
         anag:
           $ref: '#/components/schemas/Anagrafica'
-
     QrCodeDocumento:
-      type: object
+      type: 'object'
       properties:
         anag:
           $ref: '#/components/schemas/Anagrafica'
         dtGenQr:
-          type: string
-          format: date
+          type: 'string'
+          format: 'date'
         SDI:
           $ref: '#/components/schemas/SDI'
-
     Anagrafica:
-      type: object
+      type: 'object'
       properties:
         naz:
-          type: string
+          type: 'string'
         cf:
-          type: string
+          type: 'string'
         piva:
-          type: string
+          type: 'string'
         denom:
-          type: string
+          type: 'string'
         domFisc:
           $ref: '#/components/schemas/DomicilioFiscale'
-
     DomicilioFiscale:
-      type: object
+      type: 'object'
       properties:
         prov:
-          type: string
+          type: 'string'
         cap:
-          type: string
+          type: 'string'
         com:
-          type: string
+          type: 'string'
         ind:
-          type: string
+          type: 'string'
         naz:
-          type: string
-
+          type: 'string'
     SDI:
-      type: object
+      type: 'object'
       properties:
         cod:
-          type: string
+          type: 'string'
         pec:
-          type: string
-
+          type: 'string'
     DocInfo:
-      type: object
+      type: 'object'
       properties:
         idDocumento:
-          type: string
+          type: 'string'
         Tipo:
-          type: string
+          type: 'string'
         CurrentState:
-          type: string
+          type: 'string'
         StatoDocumento:
-          type: string
+          type: 'string'
         Denominazione:
-          type: string
+          type: 'string'
         fgen_TipoDocumento:
-          type: string
+          type: 'string'
         fgen_DataDocumento:
-          type: string
-          format: date
+          type: 'string'
+          format: 'date'
         fgen_Numero:
-          type: string
+          type: 'string'
         fgen_ImportoTotaleDocumento:
-          type: string
+          type: 'string'
         fgen_Causale:
-          type: string
-
+          type: 'string'
     EsitoDocumento:
-      type: object
+      type: 'object'
       required:
-        - Stato_Documento
-        - Lista_Esiti
+        - 'Stato_Documento'
+        - 'Lista_Esiti'
       properties:
         Stato_Documento:
-            anyOf:
-                - type: string
-                  enum:
-                    - OK
-                    - KO
-                - type: string
+          anyOf:
+            - type: 'string'
+              enum:
+                - 'OK'
+                - 'KO'
+            - type: 'string'
         Lista_Esiti:
-          type: array
+          type: 'array'
           items:
             $ref: '#/components/schemas/Esito'
-
     Esito:
-      type: object
+      type: 'object'
       required:
-        - Titolo
-        - Identificativo_SdI
-        - Nome_File
+        - 'Titolo'
+        - 'Identificativo_SdI'
+        - 'Nome_File'
       properties:
         Titolo:
           anyOf:
-            - type: string
+            - type: 'string'
               enum:
-                - INVIO SDI
-                - NOTIFICA MANCATA CONSEGNA
-                - NOTIFICA SCARTO
-                - RICEVUTA CONSEGNA
-            - type: string
+                - 'INVIO SDI'
+                - 'NOTIFICA MANCATA CONSEGNA'
+                - 'NOTIFICA SCARTO'
+                - 'RICEVUTA CONSEGNA'
+            - type: 'string'
         Identificativo_SdI:
-          type: string
-          example: "16772160751"
+          type: 'string'
+          example: '16772160751'
         Nome_File:
-          type: string
-          example: "IT03903290785_6EX5D.xml"
+          type: 'string'
+          example: 'IT03903290785_6EX5D.xml'
         Errore_SDI:
-          type: string
-          example: "Nessuno"
+          type: 'string'
+          example: 'Nessuno'
         Descrizione_Esito_SdI:
-          type: string
-          example: "10773841 - Invio al Sistema di Interscambio avvenuto con successo"
+          type: 'string'
+          example: '10773841 - Invio al Sistema di Interscambio avvenuto con successo'
         Data_Ora_Ricezione_SdI:
-          type: string
-          example: "02/03/2026 10:24:09"
+          type: 'string'
+          example: '02/03/2026 10:24:09'
         Message_Id:
-          type: string
-          example: "40394726606"
+          type: 'string'
+          example: '40394726606'
         Data_Ora_Ricezione:
-          type: string
-          example: "02/03/2026 10:24:09"
+          type: 'string'
+          example: '02/03/2026 10:24:09'
         Descrizione_Errore:
-          type: string
+          type: 'string'
         Codice_Errore:
-          type: string
+          type: 'string'
         Data_Ora_Consegna:
-          type: string
+          type: 'string'
         Note:
-          type: string
+          type: 'string'
         Descrizione:
-          type: string
+          type: 'string'
         IdNotifica:
-          type: integer
+          type: 'integer'
           example: 7379278
