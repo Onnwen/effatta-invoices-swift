@@ -76,12 +76,12 @@ public final actor EffattaInvoicesClient {
             } catch {
                 throw EffattaInvoicesError.unknown("\(String(describing: response)) - \(String(describing: error)) - \(String(describing: error.localizedDescription))")
             }
-        case .undocumented(let statusCode, let payload):
+        case .undocumented(let statusCode, _):
             throw EffattaInvoicesError.unknown("\(statusCode) - \(String(describing: response))")
         }
     }
     
-    public func getInvoiceStatus(_ documentId: String) async throws -> Components.Schemas.Esito.TitoloPayload.Value1Payload {
+    public func getInvoiceStatus(_ documentId: String) async throws -> ADEInvoiceStatus {
         let authentication = try await checkAuthentication()
         
         let response = try await client.getEsitoDocument(
@@ -105,16 +105,10 @@ public final actor EffattaInvoicesClient {
 
             let decodedPayload: Components.Schemas.EsitoDocumento = try decodeAsmxPayload(jsonString)
 
-            for esito in decodedPayload.Lista_Esiti.reversed() {
-                if let statoEsito = esito.Titolo.value1, statoEsito != .INVIO_space_SDI {
-                    return statoEsito
-                }
-            }
-            
-            if decodedPayload.Stato_Documento.value1 == .OK {
-                return .NOTIFICA_space_MANCATA_space_CONSEGNA
+            if let last = decodedPayload.Lista_Esiti.last, let adeEsitoLast = ADEInvoiceStatus(esito: last) {
+                return adeEsitoLast
             } else {
-                return decodedPayload.Lista_Esiti.last?.Titolo.value1 ?? .SCONOSCIUTO
+                return .unkown(raw: "Stato sconosciuto")
             }
         } catch {
             throw EffattaInvoicesError.unknown("\(String(describing: error)) \(String(describing: error.localizedDescription))")
@@ -214,6 +208,29 @@ extension EffattaInvoicesClient {
     enum EffattaInvoicesAuthenticationError: Error {
         case tokenRefreshFailed
         case tokenMissing
+    }
+    
+    public enum ADEInvoiceStatus {
+        case mancataConsegna
+        case consegnata
+        case scarto(error: String?, reason: String?)
+        case invio
+        case unkown(raw: String?)
+        
+        init?(esito: Components.Schemas.Esito) {
+            switch esito.Titolo.value1 {
+            case .INVIO_space_SDI:
+                self = .invio
+            case .NOTIFICA_space_MANCATA_space_CONSEGNA:
+                self = .mancataConsegna
+            case .RICEVUTA_space_CONSEGNA:
+                self = .consegnata
+            case .NOTIFICA_space_SCARTO:
+                self = .scarto(error: esito.Codice_Errore, reason: esito.Descrizione_Errore)
+            default:
+                self = .unkown(raw: esito.Titolo.value2)
+            }
+        }
     }
 }
 

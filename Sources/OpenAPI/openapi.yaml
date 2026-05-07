@@ -548,7 +548,6 @@ components:
                 - NOTIFICA MANCATA CONSEGNA
                 - NOTIFICA SCARTO
                 - RICEVUTA CONSEGNA
-                - SCONOSCIUTO
             - type: string
         Identificativo_SdI:
           type: string
@@ -571,6 +570,10 @@ components:
         Data_Ora_Ricezione:
           type: string
           example: "02/03/2026 10:24:09"
+        Descrizione_Errore:
+          type: string
+        Codice_Errore:
+          type: string
         Data_Ora_Consegna:
           type: string
         Note:
