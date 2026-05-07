@@ -118,6 +118,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AsmXStringResponse'
+        '404':
+          description: Array di esiti
                 
 components:
   schemas:

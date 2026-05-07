@@ -95,7 +95,11 @@ public final actor EffattaInvoicesClient {
         )
 
         guard case let .ok(body) = response else {
-            throw EffattaInvoicesError.unknown("\(String(describing: response))")
+            if case .notFound = response {
+                return .notFound
+            } else {
+                throw EffattaInvoicesError.unknown("\(String(describing: response))")
+            }
         }
 
         do {
@@ -215,6 +219,7 @@ extension EffattaInvoicesClient {
         case consegnata
         case scarto(error: String?, reason: String?)
         case invio
+        case notFound
         case unkown(raw: String?)
         
         init?(esito: Components.Schemas.Esito) {
